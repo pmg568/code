@@ -1,0 +1,94 @@
+---
+title: "trendline automation"
+output: html_document
+---
+
+library(foreign)
+library(extrafont)
+library(dplyr)
+library(magick)
+library(ggplot2)
+library(plotly)
+library(RColorBrewer)
+library(tidyverse)
+library(scales)
+library(grid)
+library(gtable)
+library(ggthemes)
+library(ggrepel)
+
+
+#Define where you will save your plots
+  results<-("yourfilepath/")
+  
+#Import your data 
+  Trend_data<-read.csv(“C:/Example/Data.csv”)
+  
+#Add graphing function
+  trend.graph <- function(Trend_data, na.rm = TRUE, ...)
+  
+#Create index and loop
+  title_list <- unique(Trend_data$CHARTTITLE)
+  for (i in seq_along(title_list)) {
+
+#Create plot 
+  plot <- 
+  ggplot(subset(Trend_data, Trend_data $CHARTTITLE==title_list[i]), aes(x=YEAR, y=ESTIMATE, ymin=minmoe, ymax=maxmoe, 
+  group=geography, color= geography)) +
+  
+#Aesthetics of line 
+  geom_line(aes(colour=geography),size = 1.0) +  geom_point(size=1.5) +
+  
+#Aesthetics of margin of error as shaded area along the line
+  geom_line(aes(colour=geography),size = 1.0) +  geom_point(size=1.5) +
+  
+#Aesthetics of number labels inside the trendline
+  geom_text_repel(aes(label = formatC(ESTIMATE,format="f",digits=1, big.mark = ",",drop0trailing = TRUE)), 
+  size=2.5,  segment.color = 'transparent', min.segment.length = 0, segment.size = 0, 
+  point.padding = .3, nudge_x = 0, nudge_y = .1, direction = "y", famiy='Courier') +
+  
+#Define X and Y scales, add comma as thousand separator, limits and breaks. 
+  scale_y_continuous(labels=function(ESTIMATE) paste0(comma(ESTIMATE)), expand = expand_scale(mult = .1, add=5),
+  breaks=pretty_breaks(n=6),limits=c(min(Trend_data$minmoe[Trend_data$CHARTTITLE==title_list[i]]), 
+  max(Trend_data$maxmoe[Trend_data$CHARTTITLE==title_list[i]]))) +
+  
+  scale_x_continuous(breaks= Trend_data$YEAR) +
+
+#Specify colors of lines
+  scale_color_manual(values=c("Geography1"="#1071B9", "Geography2"="#ED7927")) +
+  scale_fill_manual(values=c("Geography1"="#1071B9", "Geography2"="#ED7927")) +
+
+#Define legend position and font
+  theme(legend.position="bottom", legend.title = element_blank(),legend.spacing.x = unit(.6, 'cm'),
+  legend.text = element_text(family= 'Courier'),
+  
+#Define characteristics of background and add horizontal lines
+  panel.grid.major.x = element_blank(), panel.grid.minor.y = element_blank(),
+  panel.grid.major.y = element_line( size=.08, color="grey89"), panel.background = element_rect(fill = "white")) +  
+  
+#Add automated title, caption and subtitle
+  ggtitle(title_list[i]) + labs( x="", y="",
+  caption = str_wrap(paste0("Source: ",Trend_data$SOURCEID[Trend_data$CHARTTITLE==title_list[i]])),   
+  subtitle = Trend_data$CHARTSUBTITLE[Trend_data$CHARTTITLE==title_list[i]]) + 
+
+#Aesthetics of title and subtittle
+  theme(plot.title=element_text (hjust = 0, face='bold', size=12, family='Courier',margin=margin(0,0,0,0))) +  theme(plot.subtitle = element_text(hjust=0, vjust=-.5,  family='Courier', size=10,margin=margin(0,0,20,0))) +
+  theme(plot.caption = element_text(size=9, family='Courier')) +
+
+#Aesthetics of X and Y labels and text labels
+  theme(axis.title.y = element_text(family='Courier') )+
+  theme(axis.title.x = element_text(family='Courier')) +
+  theme(axis.text.x = element_text(family='Courier')) +
+  theme(axis.text.y = element_text(family='Courier')) + + 
+  theme (axis.line = element_line(size = 1, colour="gray70"),axis.text = element_text(colour = "black"))
+
+#Save each trendlne individually using the title and adding the word "trendline_" immediately before the title.
+   ggsave(plot, file=paste0(results, 'trendline_', title_list[i], ".png"))
+
+#Print plots to screen
+     print(plot)
+     }
+   }
+   
+ #Run Graphing Function
+    trend.graph(Trend_data, ESTIMATE)
